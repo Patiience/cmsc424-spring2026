@@ -1,0 +1,137 @@
+COPY (
+  SELECT json_build_object(
+    '_id', p.id,
+    'postTypeId', p.posttypeid,
+    'postType', pt.description,
+    'title', p.title,
+    'acceptedAnswerId', p.acceptedanswerid,
+    'parentId', p.parentid,
+    'creationDate', p.creationdate,
+    'score', p.score,
+    'viewCount', p.viewcount,
+    'ownerUserId', p.owneruserid,
+    'lastEditorUserId', p.lasteditoruserid,
+    'tags', p.tags
+  )
+  FROM posts p
+  LEFT JOIN posttypes pt ON p.posttypeid = pt.id
+  ORDER BY p.id
+) TO '/tmp/posts.json';
+
+
+
+      Column      |          Type          | Collation | Nullable | Default
+------------------+------------------------+-----------+----------+---------
+ id               | integer                |           | not null |
+ posttypeid       | integer                |           | not null |
+ title            | character varying(250) |           |          |
+ acceptedanswerid | integer                |           |          |
+ parentid         | integer                |           |          |
+ creationdate     | date                   |           | not null |
+ score            | integer                |           | not null |
+ viewcount        | integer                |           |          |
+ owneruserid      | integer                |           | not null |
+ lasteditoruserid | integer                |           | not null |
+ tags             | character varying(250) |           |          |
+
+
+COPY (
+  SELECT json_build_object(
+    '_id', id,
+    'reputation', reputation,
+    'creationDate', creationdate,
+    'displayName', displayname,
+    'views', views,
+    'upVotes', upvotes,
+    'downVotes', downvotes
+  )
+  FROM users
+  ORDER BY id
+) TO '/tmp/users.json';
+
+
+    Column    |         Type          | Collation | Nullable | Default
+--------------+-----------------------+-----------+----------+---------
+ id           | integer               |           | not null |
+ reputation   | integer               |           | not null |
+ creationdate | date                  |           | not null |
+ displayname  | character varying(40) |           |          |
+ views        | integer               |           | not null |
+ upvotes      | integer               |           | not null |
+ downvotes    | integer               |           | not null |
+
+
+ COPY (
+  SELECT json_build_object(
+    '_id', u.id,
+    'reputation', u.reputation,
+    'creationDate', u.creationdate,
+    'displayName', u.displayname,
+    'views', u.views,
+    'upVotes', u.upvotes,
+    'downVotes', u.downvotes,
+    'badges', COALESCE(
+      (SELECT json_agg(
+        json_build_object(
+          'name', b.name,
+          'date', b.date,
+          'class', b.class,
+          'tagBased', b.tagbased
+        )
+      )
+      FROM badges b
+      WHERE b.userid = u.id),
+      '[]'::json
+    )
+  )
+  FROM users u
+  ORDER BY u.id
+) TO '/tmp/users_with_badges.json';
+
+
+-- Export users to CSV
+COPY (
+  SELECT
+    id,
+    reputation,
+    creationdate,
+    displayname,
+    views,
+    upvotes,
+    downvotes,
+  FROM users
+  ORDER BY id
+) TO '/tmp/users.csv' WITH (FORMAT CSV, HEADER true);
+
+-- Export posts with posttype description to CSV
+COPY (
+  SELECT 
+    p.id,
+    p.posttypeid,
+    pt.description as posttype,
+    p.title,
+    p.acceptedanswerid,
+    p.parentid,
+    p.creationdate,
+    p.score,
+    p.viewcount,
+    p.owneruserid,
+    p.lasteditoruserid,
+    p.tags,
+  FROM posts p
+  LEFT JOIN posttypes pt ON p.posttypeid = pt.id
+  ORDER BY p.id
+) TO '/tmp/posts.csv' WITH (FORMAT CSV, HEADER true);
+
+COPY (
+  SELECT
+    b.userid,
+    u.displayname,
+    u.reputation,
+    b.name as badgename,
+    b.date as badgedate,
+    b.class as badgeclass
+  FROM badges b
+  INNER JOIN users u ON b.userid = u.id
+  ORDER BY b.userid, b.date
+) TO '/tmp/badges.csv' WITH (FORMAT CSV, HEADER true);
