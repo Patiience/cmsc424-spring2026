@@ -38,7 +38,7 @@ ADD Assignment-0/sample_analytics/customers.json \
     /datatemp/
 
 ADD Assignment-0/zips.json /datatemp/
-ADD Assignment-1/populate-se.sql /datatemp/
+ADD Assignment-0/populate-se.sql /datatemp/
 ADD Assignment-0/log4j2.properties /datatemp/
 
 # Configure PostgreSQL
