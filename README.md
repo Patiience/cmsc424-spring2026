@@ -7,7 +7,7 @@
 PostgreSQL, MongoDB, and Spark pre-loaded (we may update the image later if needed).
     - Install Docker Desktop: https://www.docker.com/products/docker-desktop
     - Run the docker image: `docker run --rm -ti -p 8888:8888 -p 8881:8881 -p 5432:5432 -v /Users/amol/git/cmsc424-spring2026:/data amolumd/cmsc424-spring2026`.
-    - *If you are on windows or an Intel Mac or if you see a platform mismatch issue, try using: amolumd/cmsc424-spring2026-amd64.*
+    - *If you are on windows or an Intel Mac or if you see a platform mismatch issue, try using: amolumd/cmsc424-spring2026-amd.*
     - Make sure to replace `/Users/amol/git/cmsc424-spring2026` with the correct path of the `top level directory` in the cloned GitHub repository.
     - The above command mounts the local GitHub directory into `/data` on the virtual machine. Do `ls /data` in the virtual machine to confirm that you can see `Assignment-0` directory in there. Make all your changes in that directory itself -- any changes elsewhere in the container will not survive when you exit it.
     - Assuming it ran successfully, you should be logged in as `root` in the docker container, and you should see the shell.
