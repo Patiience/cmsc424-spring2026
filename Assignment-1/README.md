@@ -1,4 +1,4 @@
-# Assignment 2: Advanced SQL, SQL + Programming Languages
+# Assignment 1: Advanced SQL, SQL + Programming Languages
 
 **This assignment is to be done by yourself.**
 
