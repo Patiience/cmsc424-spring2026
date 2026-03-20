@@ -306,3 +306,14 @@ class Encounter(models.Model):
 
     class Meta:
         ordering = ['session', 'id']
+
+# ─────────────────────────────────────────────────────────────────────
+# Spells
+# ─────────────────────────────────────────────────────────────────────
+
+class Spells(models.Model):
+    name = models.CharField(max_length=50)
+    description = models.TextField(blank=True)
+    level = models.IntegerField(default=0, choices=[(i, str(i)) for i in range(10)])
+    duration_type = models.CharField(max_length=50)
+    casting_time = models.CharField(max_length=50)
