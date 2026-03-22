@@ -86,4 +86,10 @@ urlpatterns = [
         views.add_spell_to_character,
         name='add_spell_to_character',
     ),
+
+    path(
+        'characterSpell/<int:characterSpell_pk>/edit/',
+        views.character_spell_edit,
+        name="character_spell_edit",
+    ),
 ]

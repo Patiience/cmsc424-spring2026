@@ -25,6 +25,9 @@
       <a href="{% url 'add_item_to_character' character_pk=character.pk %}" class="btn btn-primary">
         + Add Item
       </a>
+      <a href="{% url 'add_spell_to_character' character_pk=character.pk %}" class="btn btn-primary">
+        + Add Spell
+      </a>
     {% endif %}
   </div>
 </div>
@@ -186,11 +189,16 @@
             <td>{{ entry.spell.duration }}</td>
             <td>{{ entry.spell.casting_time }}</td>
             <td>
-              {% if entry.is_prepared %}
-                <span class="equipped-icon" title="Equipped">✔</span>
-              {% else %}
-                <span class="text-muted">—</span>
-              {% endif %}
+              <form method="post" action="{% url 'character_spell_edit' characterSpell_pk=entry.pk %}">
+                {% csrf_token %}
+                <button type="submit" style="all:unset">
+                  {% if entry.is_prepared %}
+                    <span class="equipped-icon" title="Equipped">✔</span>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </button>
+              </form>
             </td>
           </tr>
         {% endfor %}

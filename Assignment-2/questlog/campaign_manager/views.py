@@ -566,3 +566,19 @@ def add_spell_to_character(request, character_pk):
         'existing_form': existing_form,
         'new_spell_form': new_spell_form,
     })
+
+@login_required
+def character_spell_edit(request, characterSpell_pk):
+    characterSpell = get_object_or_404(CharacterSpell, pk=characterSpell_pk)
+    character = characterSpell.character
+
+    # Permission check
+    if character.player != request.user and character.campaign.dungeon_master != request.user:
+        messages.error(request, "You can only edit your own characters.")
+        return redirect('character_detail', pk=character.pk)
+
+    if request.method == 'POST':
+        characterSpell.is_prepared = not characterSpell.is_prepared
+        characterSpell.save()
+    
+    return redirect('character_detail', pk=character.pk)
