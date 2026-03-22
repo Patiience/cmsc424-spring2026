@@ -308,12 +308,24 @@ class Encounter(models.Model):
         ordering = ['session', 'id']
 
 # ─────────────────────────────────────────────────────────────────────
-# Spells
+# Spell
 # ─────────────────────────────────────────────────────────────────────
 
-class Spells(models.Model):
+class Spell(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField(blank=True)
     level = models.IntegerField(default=0, choices=[(i, str(i)) for i in range(10)])
     duration_type = models.CharField(max_length=50)
     casting_time = models.CharField(max_length=50)
+
+# ─────────────────────────────────────────────────────────────────────
+# CharacterSpell
+# ─────────────────────────────────────────────────────────────────────
+
+class CharacterSpell(models.Model):
+    character = models.ForeignKey(Character, on_delete=models.CASCADE)
+    spell = models.ForeignKey(Spell, on_delete=models.CASCADE)
+    is_prepared = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('character', 'spell')
