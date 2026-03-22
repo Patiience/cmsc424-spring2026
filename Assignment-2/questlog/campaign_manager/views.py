@@ -292,12 +292,17 @@ def character_detail(request, pk):
         character=character
     ).select_related('item').order_by('item__name')
 
+    spells = CharacterSpell.objects.filter(
+        character=character
+    ).select_related('spell').order_by('spell__name')
+
     is_owner = character.player == request.user
     is_dm    = character.campaign.dungeon_master == request.user
 
     return render(request, 'campaign_manager/character_detail.html', {
         'character': character,
         'inventory': inventory,
+        'spells': spells,
         'is_owner':  is_owner,
         'is_dm':     is_dm,
     })
@@ -511,7 +516,7 @@ def add_item_to_character(request, character_pk):
 def add_spell_to_character(request, character_pk):
     character = get_object_or_404(Character, pk=character_pk)
 
-    # Only the character's player or the campaign DM can modify the inventory
+    # Only the character's player or the campaign DM can modify the spells
     if character.player != request.user and character.campaign.dungeon_master != request.user:
         messages.error(request, "You can only modify your own character's spells.")
         return redirect('character_detail', pk=character_pk)
@@ -536,7 +541,7 @@ def add_spell_to_character(request, character_pk):
                     defaults={'is_prepared': is_prepared},
                 )
 
-                messages.success(request, f'Added {spell.name} to {character.name}\'s inventory.')
+                messages.success(request, f'Added {spell.name} to {character.name}\'s Spells.')
                 return redirect('character_detail', pk=character_pk)
 
         elif form_type == 'new':
