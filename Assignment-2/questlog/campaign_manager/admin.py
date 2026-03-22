@@ -13,7 +13,7 @@ To access /admin/, you need a superuser account:
 """
 
 from django.contrib import admin
-from .models import Campaign, CampaignPlayer, Character, Session, Encounter, Item, CharacterItem, Spell, CharacterSpell
+from .models import Campaign, CampaignPlayer, Character, Session, Encounter, Item, CharacterItem, Spell, CharacterSpell, CharacterRelationship, RelationshipEvent
 
 
 @admin.register(Campaign)
@@ -76,3 +76,30 @@ class CharacterSpellAdmin(admin.ModelAdmin):
     list_display = ['character', 'spell', 'is_prepared']
     list_filter = ['character']
     search_fields = ['character__name', 'spell__name']
+
+@admin.register(CharacterRelationship)
+class CharacterRelationshipAdmin(admin.ModelAdmin):
+    list_display = [
+        'from_character',
+        'to_character',
+        'relationship_type',
+        'sentiment_score',
+        'updated_at'
+    ]
+    list_filter = ['relationship_type']
+    search_fields = ['from_character__name', 'to_character__name']
+
+@admin.register(RelationshipEvent)
+class RelationshipEventAdmin(admin.ModelAdmin):
+    list_display = [
+        'relationship',
+        'encounter',
+        'sentiment_change',
+        'created_at'
+    ]
+    list_filter = ['created_at']
+    search_fields = [
+        'relationship__from_character__name',
+        'relationship__to_character__name',
+        'description'
+    ]

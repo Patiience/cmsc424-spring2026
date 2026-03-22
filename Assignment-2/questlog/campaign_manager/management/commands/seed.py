@@ -14,7 +14,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from campaign_manager.models import (
     Campaign, CampaignPlayer, Character,
-    Item, CharacterItem, Session, Encounter,
+    Item, CharacterItem, Session, Encounter, Spell, CharacterRelationship
 )
 
 
@@ -280,6 +280,79 @@ class Command(BaseCommand):
                 'rarity':      'legendary',
                 'weight':      1.0,
                 'value_gold':  0,
+            },
+        )
+
+        # ── Spells ────────────────────────────────────────────────────────
+        self.stdout.write('Creating spells...')
+
+        fireball, _ = Spell.objects.get_or_create(
+            name='Fireball',
+            defaults={
+                'description': 'A bright streak flashes and explodes, dealing massive fire damage.',
+                'level': 3,
+                'duration': 'Instantaneous',
+                'casting_time': '1 action',
+            },
+        )
+
+        magic_missile, _ = Spell.objects.get_or_create(
+            name='Magic Missile',
+            defaults={
+                'description': 'Darts of magical force strike targets automatically.',
+                'level': 1,
+                'duration': 'Instantaneous',
+                'casting_time': '1 action',
+            },
+        )
+
+        heal, _ = Spell.objects.get_or_create(
+            name='Healing Word',
+            defaults={
+                'description': 'A quick burst of healing energy restores hit points.',
+                'level': 1,
+                'duration': 'Instantaneous',
+                'casting_time': '1 bonus action',
+            },
+        )
+
+        entangle, _ = Spell.objects.get_or_create(
+            name='Entangle',
+            defaults={
+                'description': 'Grasping weeds and vines restrain creatures.',
+                'level': 1,
+                'duration': 'Up to 1 minute',
+                'casting_time': '1 action',
+            },
+        )
+
+        # ── Character Relationships ───────────────────────────────────────
+        self.stdout.write('Creating character relationships...')
+
+        thorin_aria, _ = CharacterRelationship.objects.get_or_create(
+            from_character=thorin,
+            to_character=aria,
+            defaults={
+                'relationship_type': 'ally',
+                'sentiment_score': 20,
+            },
+        )
+
+        aria_thorin, _ = CharacterRelationship.objects.get_or_create(
+            from_character=aria,
+            to_character=thorin,
+            defaults={
+                'relationship_type': 'ally',
+                'sentiment_score': 15,
+            },
+        )
+
+        thorin_brand, _ = CharacterRelationship.objects.get_or_create(
+            from_character=thorin,
+            to_character=brand,
+            defaults={
+                'relationship_type': 'rival',
+                'sentiment_score': -10,
             },
         )
 
