@@ -315,7 +315,7 @@ class Spell(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField(blank=True)
     level = models.IntegerField(default=0, choices=[(i, str(i)) for i in range(10)])
-    duration_type = models.CharField(max_length=50)
+    duration = models.CharField(max_length=50)
     casting_time = models.CharField(max_length=50)
 
 # ─────────────────────────────────────────────────────────────────────
