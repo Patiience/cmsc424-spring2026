@@ -78,4 +78,12 @@ urlpatterns = [
         views.add_item_to_character,
         name='add_item_to_character',
     ),
+
+    # ── Spell ───────────────────────────────────────────────────────
+    # Add spell to character
+    path(
+        'characters/<int:character_pk>/spell/add/',
+        views.add_spell_to_character,
+        name='add_spell_to_character',
+    ),
 ]

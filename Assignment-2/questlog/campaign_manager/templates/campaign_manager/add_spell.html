@@ -1,0 +1,103 @@
+{% extends "campaign_manager/base.html" %}
+
+{% block title %}Add Spell — {{ character.name }} — QuestLog{% endblock %}
+
+{% block content %}
+
+<div class="form-page">
+  <nav class="breadcrumb">
+    <a href="{% url 'campaign_detail' pk=character.campaign.pk %}">{{ character.campaign.name }}</a>
+    &rsaquo; <a href="{% url 'character_detail' pk=character.pk %}">{{ character.name }}</a>
+    &rsaquo; Add Spell
+  </nav>
+
+  <h1>Add Spell to {{ character.name }}'s Inventory</h1>
+
+  <!--
+    This page demonstrates working with the CharacterSpell JOIN TABLE.
+    We show two separate forms so you can see both paths clearly:
+      1. Pick an Spell that already exists in the Spell table → creates a CharacterSpell row
+      2. Create a brand-new Spell → saves to Spell table, then creates a CharacterSpell row
+
+    The hidden 'form_type' field tells the view which form was submitted.
+  -->
+
+  <div class="add-Spell-container">
+
+    <!-- ─── Form 1: Add an existing Spell ──────────────────────────── -->
+    <div class="card form-card">
+      <h2>Add an Existing Spell</h2>
+      <p class="text-muted">Pick from Spells that already exist in the world.</p>
+
+      <form method="post">
+        {% csrf_token %}
+        <!-- Tells the view this is the "pick from existing" form -->
+        <input type="hidden" name="form_type" value="existing">
+
+        {% for field in existing_form %}
+          <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <p class="field-error">{{ field.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Add to Inventory</button>
+        </div>
+      </form>
+    </div>
+
+
+    <!-- ─── Form 2: Create a new Spell ─────────────────────────────── -->
+    <div class="card form-card">
+      <h2>Create a New Spell</h2>
+      <p class="text-muted">
+        Define a brand-new Spell. It will be saved to the Spells table and then
+        added to {{ character.name }}'s inventory.
+      </p>
+
+      <form method="post">
+        {% csrf_token %}
+        <!-- Tells the view this is the "create new Spell" form -->
+        <input type="hidden" name="form_type" value="new">
+
+        {% for field in new_spell_form %}
+          <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <p class="field-error">{{ field.errors|join:", " }}</p>
+            {% endif %}
+            {% if field.help_text %}
+              <p class="field-help">{{ field.help_text }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        <!-- Quantity and equipped fields (not part of SpellForm, added manually) -->
+        <div class="form-group form-group-checkbox">
+          <label>
+            <input type="checkbox" name="is_prepared">
+            Prepare
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Create &amp; Add Spell</button>
+        </div>
+      </form>
+    </div>
+
+  </div><!-- end .add-Spell-container -->
+
+  <p style="margin-top: 1.5rem;">
+    <a href="{% url 'character_detail' pk=character.pk %}" class="btn btn-secondary">
+      &larr; Back to {{ character.name }}
+    </a>
+  </p>
+</div>
+
+{% endblock %}

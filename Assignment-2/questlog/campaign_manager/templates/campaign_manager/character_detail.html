@@ -145,4 +145,67 @@
   {% endif %}
 </section>
 
+<!-- ─── Spell ─────────────────────────────────────────────────── -->
+<section class="dashboard-section">
+  <div class="section-header">
+    <h2>Spells</h2>
+    {% if is_owner or is_dm %}
+      <a href="{% url 'add_spell_to_character' character_pk=character.pk %}" class="btn btn-primary btn-sm">
+        + Add Spell
+      </a>
+    {% endif %}
+  </div>
+
+  {% if spells %}
+    <!--
+      This table shows data from CharacterSpell — the join table between
+      Character and Spell. Each row is one CharacterSpell record, which has:
+        - spell (via FK)  →  name, level, duration, casting_time
+        - is_prepared       →  is it a currently prepared spell?
+    -->
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Spell</th>
+          <th>Level</th>
+          <th>Duration</th>
+          <th>Casting Time</th>
+          <th>Prepared</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in spells %}
+          <tr {% if entry.is_prepared %}class="row-equipped"{% endif %}>
+            <td>
+              <strong>{{ entry.spell.name }}</strong>
+              {% if entry.spell.description %}
+                <br><small class="text-muted">{{ entry.spell.description|truncatechars:60 }}</small>
+              {% endif %}
+            </td>
+            <td>{{ entry.spell.level }}</td>
+            <td>{{ entry.spell.duration }}</td>
+            <td>{{ entry.spell.casting_time }}</td>
+            <td>
+              {% if entry.is_prepared %}
+                <span class="equipped-icon" title="Equipped">✔</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty-state">
+      <p>{{ character.name }} has no spells. A true minimalist.</p>
+      {% if is_owner or is_dm %}
+        <a href="{% url 'add_spell_to_character' character_pk=character.pk %}" class="btn btn-secondary">
+          Add a Spell
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+
 {% endblock %}

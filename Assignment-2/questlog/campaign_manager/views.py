@@ -15,7 +15,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-from .models import Campaign, CampaignPlayer, Character, Session, Encounter, Item, CharacterItem
+from .models import Campaign, CampaignPlayer, Character, Session, Encounter, Item, CharacterItem, Spell, CharacterSpell
 from .forms import (
     RegistrationForm,
     CampaignForm,
@@ -24,6 +24,8 @@ from .forms import (
     EncounterForm,
     ItemForm,
     AddExistingItemForm,
+    SpellForm,
+    AddExistingSpellForm,
 )
 
 
@@ -499,4 +501,63 @@ def add_item_to_character(request, character_pk):
         'character':     character,
         'existing_form': existing_form,
         'new_item_form': new_item_form,
+    })
+
+# ─────────────────────────────────────────────────────────────────────
+# Spell views
+# ─────────────────────────────────────────────────────────────────────
+
+@login_required
+def add_spell_to_character(request, character_pk):
+    character = get_object_or_404(Character, pk=character_pk)
+
+    # Only the character's player or the campaign DM can modify the inventory
+    if character.player != request.user and character.campaign.dungeon_master != request.user:
+        messages.error(request, "You can only modify your own character's spells.")
+        return redirect('character_detail', pk=character_pk)
+
+    existing_form  = AddExistingSpellForm()
+    new_spell_form  = SpellForm()
+
+    if request.method == 'POST':
+        form_type = request.POST.get('form_type')
+
+        if form_type == 'existing':
+            # ── Path 1: User picked an existing spell ──
+            existing_form = AddExistingSpellForm(request.POST)
+            if existing_form.is_valid():
+                spell     = existing_form.cleaned_data['spell']
+                is_prepared = existing_form.cleaned_data['is_prepared']
+
+                # get_or_create returns (object, created_bool).
+                CharacterSpell.objects.get_or_create(
+                    character=character,
+                    spell=spell,
+                    defaults={'is_prepared': is_prepared},
+                )
+
+                messages.success(request, f'Added {spell.name} to {character.name}\'s inventory.')
+                return redirect('character_detail', pk=character_pk)
+
+        elif form_type == 'new':
+            # ── Path 2: User is creating a brand-new spell ──
+            new_spell_form = SpellForm(request.POST)
+            is_prepared = request.POST.get('is_prepared') == 'on'
+
+            if new_spell_form.is_valid():
+                # Save the new Spell to the database first
+                spell = new_spell_form.save()
+                # Then create the Inventory entry linking character ↔ spell
+                CharacterSpell.objects.create(
+                    character=character,
+                    spell=spell,
+                    is_prepared=is_prepared,
+                )
+                messages.success(request, f'Created "{spell.name}" and added it to {character.name}\'s inventory.')
+                return redirect('character_detail', pk=character_pk)
+
+    return render(request, 'campaign_manager/add_spell.html', {
+        'character':     character,
+        'existing_form': existing_form,
+        'new_spell_form': new_spell_form,
     })

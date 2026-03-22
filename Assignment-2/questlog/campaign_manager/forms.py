@@ -13,7 +13,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import Campaign, Character, Session, Encounter, Item, CharacterItem
+from .models import Campaign, Character, Session, Encounter, Item, CharacterItem, Spell, CharacterSpell
 
 
 class RegistrationForm(UserCreationForm):
@@ -106,3 +106,23 @@ class AddExistingItemForm(forms.ModelForm):
         model  = CharacterItem
         # character is set automatically in the view
         fields = ['item', 'quantity', 'equipped']
+
+class SpellForm(forms.ModelForm):
+    """Form for creating new spell"""
+
+    class Meta:
+        model = Spell
+        fields = ['name', 'description', 'level', 'duration', 'casting_time']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
+
+class AddExistingSpellForm(forms.ModelForm):
+    """Form for adding existing spells from the database"""
+    spell = forms.ModelChoiceField(
+        queryset=Spell.objects.all().order_by('name'),
+        empty_label="— Select a Spell —"
+    )
+    class Meta:
+        model = CharacterSpell
+        fields = ['spell', 'is_prepared']
