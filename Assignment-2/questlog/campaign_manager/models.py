@@ -312,6 +312,9 @@ class Encounter(models.Model):
 # ─────────────────────────────────────────────────────────────────────
 
 class Spell(models.Model):
+
+    # TODO: Make a list of spells available in the game using CHOICES (look above or below for examples)
+
     name = models.CharField(max_length=50)
     description = models.TextField(blank=True)
     level = models.IntegerField(default=0, choices=[(i, str(i)) for i in range(10)])
@@ -329,3 +332,117 @@ class CharacterSpell(models.Model):
 
     class Meta:
         unique_together = ('character', 'spell')
+
+
+# ─────────────────────────────────────────────────────────────────────
+# CharacterRelationship  (self-referential join table: Character ↔ Character)
+# ─────────────────────────────────────────────────────────────────────
+
+class CharacterRelationship(models.Model):
+    """
+    Represents the CURRENT state of a relationship between two characters.
+
+    Historical changes (events, encounters, sentiment shifts) are stored
+    separately in the RelationshipEvent table.
+    """
+
+    RELATIONSHIP_TYPE_CHOICES = [
+        ('ally',     'Ally'),
+        ('rival',    'Rival'),
+        ('mentor',   'Mentor'),
+        ('sibling',  'Sibling'),
+        ('romantic', 'Romantic Interest'),
+        ('debt',     'Debt Owed'),
+        ('neutral',  'Neutral'),
+    ]
+
+    from_character = models.ForeignKey(
+        Character,
+        on_delete=models.CASCADE,
+        related_name='relationships_initiated'
+    )
+
+    to_character = models.ForeignKey(
+        Character,
+        on_delete=models.CASCADE,
+        related_name='relationships_received'
+    )
+
+    relationship_type = models.CharField(
+        max_length=20,
+        choices=RELATIONSHIP_TYPE_CHOICES,
+        default='neutral'
+    )
+
+    sentiment_score = models.IntegerField(
+        default=0,
+        help_text="Current overall sentiment (updated based on events)"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('from_character', 'to_character')
+        constraints = [
+            models.CheckConstraint(
+                check=~models.Q(from_character=models.F('to_character')),
+                name='prevent_self_relationship'
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.from_character.name} → {self.to_character.name} "
+            f"({self.get_relationship_type_display()}, {self.sentiment_score})"
+        )
+
+# ─────────────────────────────────────────────────────────────────────
+# RelationshipEvent  (history table for CharacterRelationship)
+# ─────────────────────────────────────────────────────────────────────
+
+class RelationshipEvent(models.Model):
+    """
+    Represents a single event that affected a relationship between two characters.
+
+    Each event:
+      - optionally ties to an Encounter
+      - records what happened
+      - records how much the sentiment changed
+
+    Many events can belong to one CharacterRelationship.
+    """
+
+    relationship = models.ForeignKey(
+        CharacterRelationship,
+        on_delete=models.CASCADE,
+        related_name='events'
+    )
+
+    encounter = models.ForeignKey(
+        Encounter,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='relationship_events'
+    )
+
+    description = models.TextField(
+        help_text="What happened (e.g., 'Saved from ambush', 'Betrayed during negotiation')"
+    )
+
+    sentiment_change = models.IntegerField(
+        help_text="Positive = improves relationship, Negative = worsens it"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return (
+            f"{self.relationship.from_character.name} → "
+            f"{self.relationship.to_character.name} "
+            f"({self.sentiment_change:+})"
+        )
+
+    class Meta:
+        ordering = ['-created_at']
