@@ -329,27 +329,18 @@ class Command(BaseCommand):
         # ── Character Relationships ───────────────────────────────────────
         self.stdout.write('Creating character relationships...')
 
-        thorin_aria, _ = CharacterRelationship.objects.get_or_create(
-            from_character=thorin,
-            to_character=aria,
+        aria_thorin, _ = CharacterRelationship.objects.get_or_create(
+            character1=aria,
+            character2=thorin,
             defaults={
-                'relationship_type': 'ally',
+                'relationship_type': 'romantic',
                 'sentiment_score': 20,
             },
         )
 
-        aria_thorin, _ = CharacterRelationship.objects.get_or_create(
-            from_character=aria,
-            to_character=thorin,
-            defaults={
-                'relationship_type': 'ally',
-                'sentiment_score': 15,
-            },
-        )
-
-        thorin_brand, _ = CharacterRelationship.objects.get_or_create(
-            from_character=thorin,
-            to_character=brand,
+        brand_thorin, _ = CharacterRelationship.objects.get_or_create(
+            character1=brand,
+            character2=thorin,
             defaults={
                 'relationship_type': 'rival',
                 'sentiment_score': -10,

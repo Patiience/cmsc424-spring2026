@@ -14,8 +14,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Q
 
-from .models import Campaign, CampaignPlayer, Character, Session, Encounter, Item, CharacterItem, Spell, CharacterSpell
+from .models import Campaign, CampaignPlayer, Character, Session, Encounter, Item, CharacterItem, Spell, CharacterSpell, CharacterRelationship, RelationshipEvent
 from .forms import (
     RegistrationForm,
     CampaignForm,
@@ -26,6 +27,8 @@ from .forms import (
     AddExistingItemForm,
     SpellForm,
     AddExistingSpellForm,
+    RelationshipForm,
+    RelationshipEventForm,
 )
 
 
@@ -296,6 +299,10 @@ def character_detail(request, pk):
         character=character
     ).select_related('spell').order_by('spell__name')
 
+    relationships = CharacterRelationship.objects.filter(
+        Q(character1=character) | Q(character2=character)
+    ).select_related('character1', 'character2').order_by('-created_at')
+
     is_owner = character.player == request.user
     is_dm    = character.campaign.dungeon_master == request.user
 
@@ -303,6 +310,7 @@ def character_detail(request, pk):
         'character': character,
         'inventory': inventory,
         'spells': spells,
+        'relationships': relationships,
         'is_owner':  is_owner,
         'is_dm':     is_dm,
     })
@@ -399,30 +407,82 @@ def session_detail(request, pk):
 
 @login_required
 def encounter_create(request, session_pk):
-    """
-    Adds an encounter to a session. Only the campaign's DM can do this.
-    """
     session = get_object_or_404(Session, pk=session_pk)
 
     if session.campaign.dungeon_master != request.user:
         messages.error(request, "Only the Dungeon Master can add encounters.")
         return redirect('session_detail', pk=session_pk)
 
+    encounter_form = EncounterForm(request.POST or None, prefix='enc')
+    rel_form = RelationshipEventForm(request.POST or None, prefix='rel')
+
+    # Limit characters to this campaign
+    characters = Character.objects.filter(campaign=session.campaign)
+    rel_form.fields['character1'].queryset = characters
+    rel_form.fields['character2'].queryset = characters
+
     if request.method == 'POST':
-        form = EncounterForm(request.POST)
-        if form.is_valid():
-            encounter = form.save(commit=False)
+        encounter_valid = encounter_form.is_valid()
+        rel_valid = rel_form.is_valid()
+
+        # Check if relationship form has ANY data filled
+        rel_has_data = any([
+            rel_form.data.get('rel-character1'),
+            rel_form.data.get('rel-character2'),
+            rel_form.data.get('rel-description'),
+            rel_form.data.get('rel-sentiment_change'),
+        ])
+
+        # Relationship partially filled but invalid
+        if rel_has_data and not rel_valid:
+            # Pass to allow for errors
+            pass
+
+        # Encounter form valid AND relationship form empty OR valid
+        elif encounter_valid:
+            encounter = encounter_form.save(commit=False)
             encounter.session = session
             encounter.save()
-            messages.success(request, f'Encounter "{encounter.name}" added to Session #{session.session_number}.')
+
+            # If relationship form is filled and valid
+            if rel_has_data and rel_valid:
+                char1 = rel_form.cleaned_data['character1']
+                char2 = rel_form.cleaned_data['character2']
+                sentiment_change = rel_form.cleaned_data['sentiment_change']
+
+                relationship = CharacterRelationship.objects.filter(
+                    Q(character1=char1, character2=char2) |
+                    Q(character1=char2, character2=char1)
+                ).select_related('character1', 'character2').first()
+
+                if relationship:
+                    event = rel_form.save(commit=False)
+                    event.relationship = relationship
+                    event.encounter = encounter
+                    event.save()
+
+                    relationship.sentiment_score += sentiment_change or 0
+                    relationship.save()
+                else:
+                    rel_form.add_error(None, "Relationship does not exist.")
+                    return render(request, 'campaign_manager/encounter_form.html', {
+                        'encounter_form': encounter_form,
+                        'rel_encounter_form': rel_form,
+                        'session': session,
+                        'title': f'Add Encounter — Session #{session.session_number}',
+                    })
+
+            messages.success(
+                request,
+                f'Encounter "{encounter.name}" added to Session #{session.session_number}.'
+            )
             return redirect('session_detail', pk=session_pk)
-    else:
-        form = EncounterForm()
 
     return render(request, 'campaign_manager/encounter_form.html', {
-        'form':    form,
+        'encounter_form': encounter_form,
+        'rel_encounter_form': rel_form,
         'session': session,
-        'title':   f'Add Encounter — Session #{session.session_number}',
+        'title': f'Add Encounter — Session #{session.session_number}',
     })
 
 
@@ -582,3 +642,65 @@ def character_spell_edit(request, characterSpell_pk):
         characterSpell.save()
     
     return redirect('character_detail', pk=character.pk)
+
+# ─────────────────────────────────────────────────────────────────────
+# Relationship Views
+# ─────────────────────────────────────────────────────────────────────
+
+@login_required
+def add_relationship(request, character_pk, campaign_pk):
+    character = get_object_or_404(Character, pk=character_pk)
+    campaign = get_object_or_404(Campaign, pk=campaign_pk)
+
+    # Permission check
+    if character.player != request.user and character.campaign.dungeon_master != request.user:
+        messages.error(request, "You can only modify this character's relationships.")
+        return redirect('character_detail', pk=character_pk)
+
+    relationship_form = RelationshipForm(request.POST or None, character1=character)
+
+    # Limit characters to this campaign
+    characters = Character.objects.filter(campaign=campaign)
+    relationship_form.fields['character2'].queryset = characters
+
+    if request.method == 'POST':
+        if relationship_form.is_valid():
+            relationship = relationship_form.save(commit=False)
+
+            # Enforce current character to be the character1
+            relationship.character1 = character
+
+            relationship.save()
+
+            messages.success(request, "Relationship created successfully.")
+            return redirect('character_detail', pk=character_pk)
+
+    return render(request, 'campaign_manager/relationship_form.html', {
+        'form': relationship_form,
+        'character': character,
+        'title':   f'Add Relationship for {character.name}'
+    })
+
+@login_required
+def relationship_log(request, character_pk, other_character_pk):
+    character = get_object_or_404(Character, pk=character_pk)
+    other_character = get_object_or_404(Character, pk=other_character_pk)
+
+    # Get the ONE relationship between these two characters (either direction)
+    relationship = CharacterRelationship.objects.filter(
+        Q(character1=character, character2=other_character) |
+        Q(character1=other_character, character2=character)
+    ).select_related('character1', 'character2').first()
+
+    # Get events ONLY for this relationship
+    events = RelationshipEvent.objects.filter(
+        relationship=relationship
+    ).select_related('encounter').order_by('-created_at')
+
+    return render(request, 'campaign_manager/relationship_events.html', {
+        'character': character,
+        'other_character': other_character,
+        'relationship': relationship,
+        'events': events,
+        'title': f'{character.name} ↔ {other_character.name}',
+    })

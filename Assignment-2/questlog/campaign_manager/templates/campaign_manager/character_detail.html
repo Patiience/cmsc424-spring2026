@@ -189,16 +189,11 @@
             <td>{{ entry.spell.duration }}</td>
             <td>{{ entry.spell.casting_time }}</td>
             <td>
-              <form method="post" action="{% url 'character_spell_edit' characterSpell_pk=entry.pk %}">
-                {% csrf_token %}
-                <button type="submit" style="all:unset">
-                  {% if entry.is_prepared %}
-                    <span class="equipped-icon" title="Equipped">✔</span>
-                  {% else %}
-                    <span class="text-muted">—</span>
-                  {% endif %}
-                </button>
-              </form>
+              {% if entry.is_prepared %}
+                <span class="equipped-icon" title="Equipped">✔</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
             </td>
           </tr>
         {% endfor %}
@@ -210,6 +205,75 @@
       {% if is_owner or is_dm %}
         <a href="{% url 'add_spell_to_character' character_pk=character.pk %}" class="btn btn-secondary">
           Add a Spell
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+
+
+<!-- ─── Character Relationships ─────────────────────────────────────────────────── -->
+<section class="dashboard-section">
+  <div class="section-header">
+    <h2>Relationships</h2>
+    {% if is_owner or is_dm %}
+      <a href="{% url 'add_relationship' character_pk=character.pk campaign_pk=character.campaign.pk %}" class="btn btn-primary btn-sm">
+        + Add Relationship
+      </a>
+    {% endif %}
+  </div>
+
+  {% if relationships %}
+    <!--
+      This table shows data from CharacterRelationship
+      Each row is one relationship record, which has:
+        - character1, character2 (via FK)  →  name, race, etc. (Character)
+        - relationship_type      →  type of relationship
+        - sentiment_score  →  how good is the relationship (positive = better)
+    -->
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Relationship</th>
+          <th>Relationship Type</th>
+          <th>Sentiment Score</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in relationships %}
+          <tr>
+            <td>
+              {% if entry.character1.pk == character.pk %}
+                {{ entry.character2.name }}
+              {% else %}
+                {{ entry.character1.name }}
+              {% endif %}
+            </td>
+
+            <td>{{ entry.relationship_type }}</td>
+            <td>{{ entry.sentiment_score }}</td>
+            <td>
+              {% if entry.character1.pk == character.pk %}
+                <a href="{% url 'relationship_log' character_pk=character.pk other_character_pk=entry.character2.pk %}" class="btn btn-secondary btn-xs">
+                  View Encounters
+                </a>
+              {% else %}
+                <a href="{% url 'relationship_log' character_pk=character.pk other_character_pk=entry.character1.pk %}" class="btn btn-secondary btn-xs">
+                  View Encounters
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty-state">
+      <p>{{ character.name }} has no relationships. A true martian in outerspace.</p>
+      {% if is_owner or is_dm %}
+        <a href="{% url 'add_relationship' character_pk=character.pk campaign_pk=character.campaign.pk %}" class="btn btn-secondary">
+          Add a Relationship
         </a>
       {% endif %}
     </div>

@@ -312,9 +312,6 @@ class Encounter(models.Model):
 # ─────────────────────────────────────────────────────────────────────
 
 class Spell(models.Model):
-
-    # TODO: Make a list of spells available in the game using CHOICES (look above or below for examples)
-
     name = models.CharField(max_length=50)
     description = models.TextField(blank=True)
     level = models.IntegerField(default=0, choices=[(i, str(i)) for i in range(10)])
@@ -359,13 +356,13 @@ class CharacterRelationship(models.Model):
         ('neutral',  'Neutral'),
     ]
 
-    from_character = models.ForeignKey(
+    character1 = models.ForeignKey(
         Character,
         on_delete=models.CASCADE,
         related_name='relationships_initiated'
     )
 
-    to_character = models.ForeignKey(
+    character2 = models.ForeignKey(
         Character,
         on_delete=models.CASCADE,
         related_name='relationships_received'
@@ -386,17 +383,17 @@ class CharacterRelationship(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('from_character', 'to_character')
+        unique_together = ('character1', 'character2')
         constraints = [
             models.CheckConstraint(
-                check=~models.Q(from_character=models.F('to_character')),
+                check=~models.Q(character1=models.F('character2')),
                 name='prevent_self_relationship'
             )
         ]
 
     def __str__(self):
         return (
-            f"{self.from_character.name} → {self.to_character.name} "
+            f"{self.character1.name} → {self.character2.name} "
             f"({self.get_relationship_type_display()}, {self.sentiment_score})"
         )
 
@@ -442,8 +439,8 @@ class RelationshipEvent(models.Model):
 
     def __str__(self):
         return (
-            f"{self.relationship.from_character.name} → "
-            f"{self.relationship.to_character.name} "
+            f"{self.relationship.character1.name} → "
+            f"{self.relationship.character2.name} "
             f"({self.sentiment_change:+})"
         )
 

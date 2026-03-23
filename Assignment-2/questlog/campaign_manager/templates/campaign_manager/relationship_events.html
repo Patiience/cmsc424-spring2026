@@ -1,0 +1,110 @@
+{% extends "campaign_manager/base.html" %}
+
+{% block title %} {{ character.name }} Relationship — QuestLog{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="page-header">
+  <div>
+    <nav class="breadcrumb">
+        <a href="{% url 'campaign_detail' pk=character.campaign.pk %}">{{ character.campaign.name }}</a>
+        &rsaquo; <a href="{% url 'character_detail' pk=character.pk %}">{{ character.name }}</a>
+    </nav>
+    <h1>{{ title }}</h1>
+  </div>
+</div>
+
+<!-- Relationship State -->
+<div class="card stat-block">
+  <h2>Relationship Overview</h2>
+  <div class="stat-grid">
+    <div class="stat">
+      <span class="stat-label">Relationship Type</span>
+      <span class="stat-value">{{ relationship.relationship_type }}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Sentiment Score</span>
+      <span class="stat-value">{{ relationship.sentiment_score }}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Campaign</span>
+      <span class="stat-value">
+        <a href="{% url 'campaign_detail' pk=character.campaign.pk %}">
+          {{ character.campaign.name }}
+        </a>
+      </span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─── Encounters ────────────────────────────────────────────────── -->
+<section class="dashboard-section">
+  <div class="section-header">
+    <h2>Encounters</h2>
+    {% if is_dm %}
+      <a href="{% url 'encounter_create' session_pk=session.pk %}" class="btn btn-primary btn-sm">
+        + Add Encounter
+      </a>
+    {% endif %}
+  </div>
+
+  {% if events %}
+    <div class="encounter-list">
+      {% for event in events %}
+        <div class="card encounter-card">
+          <div class="encounter-header">
+            <h3>{{ event.encounter.name }}</h3>
+            <div class="encounter-badges">
+              <!-- Difficulty badge -->
+              <span class="badge badge-difficulty-{{ event.encounter.difficulty }}">
+                {{ event.encounter.get_difficulty_display }}
+              </span>
+              <!-- Outcome badge (or 'Unresolved' if null) -->
+              {% if event.encounter.outcome %}
+                <span class="badge badge-outcome-{{ event.encounter.outcome }}">
+                  {{ event.encounter.get_outcome_display }}
+                </span>
+              {% else %}
+                <span class="badge badge-outcome-unresolved">Unresolved</span>
+              {% endif %}
+            </div>
+          </div>
+          {% if event.encounter.description %}
+            <p class="encounter-description">{{ event.encounter.description }}</p>
+          {% endif %}
+          <br>
+          <hr>
+          <br>
+          <div class="stat-grid">
+            <div class="stat">
+                <span class="stat-label">Sentiment Change</span>
+                <span class="stat-value">
+                    {% if event.sentiment_change > 0 %}
+                        +{{ event.sentiment_change }}
+                    {% else %}
+                        {{ event.sentiment_change }}
+                    {% endif %}
+                </span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Brief Description</span>
+                <span class="stat-value">
+                    {% if event.description %}
+                        {{ event.description }}
+                    {% endif %}
+                </span>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>No encounters between these two knuckleheads.</p>
+    </div>
+  {% endif %}
+</section>
+
+{% endblock %}

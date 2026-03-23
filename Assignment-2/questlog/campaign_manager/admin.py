@@ -80,14 +80,14 @@ class CharacterSpellAdmin(admin.ModelAdmin):
 @admin.register(CharacterRelationship)
 class CharacterRelationshipAdmin(admin.ModelAdmin):
     list_display = [
-        'from_character',
-        'to_character',
+        'character1',
+        'character2',
         'relationship_type',
         'sentiment_score',
         'updated_at'
     ]
     list_filter = ['relationship_type']
-    search_fields = ['from_character__name', 'to_character__name']
+    search_fields = ['character1__name', 'character2__name']
 
 @admin.register(RelationshipEvent)
 class RelationshipEventAdmin(admin.ModelAdmin):
@@ -99,7 +99,7 @@ class RelationshipEventAdmin(admin.ModelAdmin):
     ]
     list_filter = ['created_at']
     search_fields = [
-        'relationship__from_character__name',
-        'relationship__to_character__name',
+        'relationship__character1__name',
+        'relationship__character2__name',
         'description'
     ]

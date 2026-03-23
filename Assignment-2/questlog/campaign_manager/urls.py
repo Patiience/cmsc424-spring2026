@@ -92,4 +92,15 @@ urlpatterns = [
         views.character_spell_edit,
         name="character_spell_edit",
     ),
+
+    # ── CharacterRelationship ───────────────────────────────────────────────────────
+    # Add relationship to character
+    path(
+        'characters/<int:character_pk>/rel/<int:campaign_pk>/add/',
+        views.add_relationship,
+        name='add_relationship',
+    ),
+
+    # View relationship encounters:
+    path('characters/<int:character_pk>/rel/<int:other_character_pk>/encounters/', views.relationship_log, name='relationship_log'),
 ]

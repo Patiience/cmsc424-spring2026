@@ -17,13 +17,34 @@
     <form method="post">
       {% csrf_token %}
 
-      {% if form.errors %}
+      <h2>Main Encounter Details</h2>
+      {% if encounter_form.errors %}
         <div class="message message-error">
           Please correct the errors highlighted below.
         </div>
       {% endif %}
 
-      {% for field in form %}
+      {% for field in encounter_form %}
+        <div class="form-group">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <p class="field-error">{{ field.errors|join:", " }}</p>
+          {% endif %}
+          {% if field.help_text %}
+            <p class="field-help">{{ field.help_text }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <h3>Additional Relationship Effect Details</h3>
+      {% if rel_encounter_form.errors %}
+        <div class="message message-error">
+          Make sure no non-existent relationships.
+        </div>
+      {% endif %}
+
+      {% for field in rel_encounter_form %}
         <div class="form-group">
           <label for="{{ field.id_for_label }}">{{ field.label }}</label>
           {{ field }}
